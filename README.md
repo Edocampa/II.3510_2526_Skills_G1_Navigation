@@ -5,4 +5,3 @@ Student Skills presentation about Android navigation patterns: Drawer || Tabs ||
 ## Team Members
 - Edoardo Campanella
 - Jacopo Maria Barile
-- prova finale
