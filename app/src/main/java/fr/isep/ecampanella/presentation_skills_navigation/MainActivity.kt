@@ -18,7 +18,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
+import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
+import android.net.http.SslCertificate.saveState
+import android.net.http.SslCertificate.restoreState
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
 
 
 /**
@@ -29,6 +37,7 @@ sealed class DrawerDestination(
     val route: String, //navigation route ID to display screens
     val title: String, //name of the shown screen
     val icon: ImageVector, //icons to show near the screen name
+    val badge: String? = null // indicator that shows the number of notifications
 ) {
     object Home : DrawerDestination("home", "Home", Icons.Default.Home)
     object Search : DrawerDestination("search", "Search", Icons.Default.Search)
@@ -60,12 +69,239 @@ class MainActivity : ComponentActivity() {
 
 /**
  * This will display a custom header with all user infos and other things
+ *
+ *
+ * It's the main function that manages the entire app
+ *
  */
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicDrawerApp() {
-    // Reminder: TODO
+    //navController for navigation and drawerState to open/close drawer
+    val navController = rememberNavController()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route //Tracks current route
+
+    // Side drawer with menu items
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            MusicDrawerContent(
+                currentRoute = currentRoute,
+                onDestinationClick = { route ->
+                    scope.launch {
+                        drawerState.close()
+                    }
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
+    ) {
+        Scaffold(
+            // TopBar with title and hamburger icon to open drawer
+            topBar = {
+                TopAppBar(
+                    title = { Text("Spotify Demo") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            scope.launch {
+                                if (drawerState.isClosed) {
+                                    drawerState.open()
+                                } else {
+                                    drawerState.close()
+                                }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menu"
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color(0xFF1DB954), // Spotify green
+                        titleContentColor = Color.White,
+                        navigationIconContentColor = Color.White
+                    )
+                )
+            }
+        ) { paddingValues ->
+            //This is the main content with all screens
+            NavigationHost(
+                navController = navController,
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
 }
+
+
+// The Drawer Content that represents the side menu
+
+@Composable
+fun MusicDrawerContent(
+    currentRoute: String?,
+    onDestinationClick: (String) -> Unit
+) {
+    ModalDrawerSheet(
+        drawerContainerColor = Color(0xFF121212)
+    ) {
+        Column(
+            // This is the main navigation items like Home,Search,Library
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+
+            // In this point there will be an Header: TODO (reminder)
+
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // SECTION 1: Main Navigation
+            val mainDestinations = listOf(
+                DrawerDestination.Home,
+                DrawerDestination.Search,
+                DrawerDestination.Library
+            )
+
+            mainDestinations.forEach { destination ->
+                NavigationDrawerItem(
+                    icon = {
+                        Icon(
+                            imageVector = destination.icon,
+                            contentDescription = destination.title,
+                            tint = Color.White
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = destination.title,
+                            color = Color.White
+                        )
+                    },
+                    selected = currentRoute == destination.route,
+                    onClick = { onDestinationClick(destination.route) },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF1DB954).copy(alpha = 0.3f),
+                        unselectedContainerColor = Color.Transparent
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 16.dp, horizontal = 16.dp),
+                color = Color.Gray.copy(alpha = 0.3f)
+            )
+
+            // SECTION 2: Library
+            Text(
+                text = "YOUR LIBRARY",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray,
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+                fontWeight = FontWeight.Bold
+            )
+
+            //This is the library section like Liked songs,Create Playlist,Episodes
+
+            val libraryDestinations = listOf(
+                DrawerDestination.LikedSongs,
+                DrawerDestination.CreatePlaylist,
+                DrawerDestination.YourEpisodes
+            )
+
+            libraryDestinations.forEach { destination ->
+                NavigationDrawerItem(
+                    icon = {
+                        Icon(
+                            imageVector = destination.icon,
+                            contentDescription = destination.title,
+                            tint = if (destination.route == "liked_songs") {
+                                Color(0xFF1DB954)
+                            } else {
+                                Color.White
+                            }
+                        )
+                    },
+                    label = {
+                        Text(
+                            text = destination.title,
+                            color = Color.White
+                        )
+                    },
+                    badge = if (destination.badge != null) {
+                        {
+                            Badge {
+                                Text(text = destination.badge)
+                            }
+                        }
+                    } else null,
+                    selected = currentRoute == destination.route,
+                    onClick = { onDestinationClick(destination.route) },
+                    colors = NavigationDrawerItemDefaults.colors(
+                        selectedContainerColor = Color(0xFF1DB954).copy(alpha = 0.3f),
+                        unselectedContainerColor = Color.Transparent
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+
+            // Push footer to bottom
+            Spacer(modifier = Modifier.weight(1f))
+
+            // In this point there will be a Footer: TODO (reminder)
+        }
+    }
+}
+
+
+// The NavigationHost defines all app routes and screens
+@Composable
+fun NavigationHost(
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = DrawerDestination.Home.route,
+        modifier = modifier
+    ) {
+        composable(DrawerDestination.Home.route) {
+            // This will be the route for the home screen with tabs
+        }
+        composable(DrawerDestination.Search.route) {
+            ScreenContent("Search", "Search for music, podcasts and more")
+        }
+        composable(DrawerDestination.Library.route) {
+            ScreenContent("Your Library", "Your playlists and saved content")
+        }
+        composable(DrawerDestination.LikedSongs.route) {
+            ScreenContent("Liked Songs", "All your favorite tracks in one place")
+        }
+        composable(DrawerDestination.CreatePlaylist.route) {
+            ScreenContent("Create Playlist", "Create a new playlist")
+        }
+        composable(DrawerDestination.YourEpisodes.route) {
+            ScreenContent("Your Episodes", "Your saved podcast episodes")
+        }
+    }
+}
+
+
+
+
 //displays the content of tabs with cards
 @Composable
 fun TabScreenContent(title: String, items: List<String>) {
