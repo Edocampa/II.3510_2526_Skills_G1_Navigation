@@ -165,8 +165,7 @@ fun MusicDrawerContent(
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // In this point there will be an Header: TODO (reminder)
-
+            DrawerHeader()
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -334,7 +333,7 @@ fun NavigationHost(
         modifier = modifier
     ) {
         composable(DrawerDestination.Home.route) {
-            // This will be the route for the home screen with tabs
+            HomeScreenWithTabs()
         }
         composable(DrawerDestination.Search.route) {
             ScreenContent("Search", "Search for music, podcasts and more")
