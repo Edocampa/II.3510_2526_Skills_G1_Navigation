@@ -27,8 +27,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
-
-
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
 /**
  * This is the sealed class that manage the routes for the side drawer menu
  *
@@ -266,6 +268,59 @@ fun MusicDrawerContent(
     }
 }
 
+@Composable
+fun DrawerHeader() {
+    //header section of the Drawer
+    Row(
+        modifier = Modifier
+            .fillMaxWidth() //entire drawer width
+            .background(Color(0xFF1DB954)) //Spotify-style green
+            .padding(24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
+    ) {
+
+        //Profile picture placeholder section
+        Box(
+            modifier = Modifier
+                .size(60.dp) //profile image area
+                .clip(CircleShape) //Clip the box into a circle shape
+                .background(Color.White),
+            contentAlignment = Alignment.Center //Center the icon inside the circle
+        ) {
+            //avatar placeholder
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile", // Accessibility description
+                tint = Color(0xFF1DB954),
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        // Spacer adds horizontal space between the profile icon and the text
+        Spacer(modifier = Modifier.width(16.dp))
+
+        //User information
+        Column {
+            // Display the user's name
+            Text(
+                text = "John Doe", // Placeholder username
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            // Display the user type or subscription plan
+            Text(
+                text = "Premium User", // Placeholder user role or plan
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 14.sp
+            )
+        }
+    }
+}
+
+
 
 // The NavigationHost defines all app routes and screens
 @Composable
@@ -299,7 +354,127 @@ fun NavigationHost(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreenWithTabs() {
+    //separate NavController just for navigating between tab screens
+    val tabNavController = rememberNavController()
 
+    //list of tabs to represents screens (Songs, Albums, Artists)
+    val tabs = listOf(
+        TabDestination.Songs,
+        TabDestination.Albums,
+        TabDestination.Artists
+    )
+
+    //Observe the current back stack entry to know which tab is active
+    val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    // Determine which tab index corresponds to the current route
+    // If no match is found, default to the first tab using the elvis
+    val selectedTabIndex = tabs.indexOfFirst { it.route == currentRoute }
+        .takeIf { it != -1 } ?: 0
+
+    //Root layout for the entire Home screen
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF121212))
+    ) {
+
+        // TAB ROW SECTION (Top navigation)
+        PrimaryTabRow(
+            selectedTabIndex = selectedTabIndex,  // Highlights the active tab
+            containerColor = Color(0xFF1DB954),
+            contentColor = Color.White
+        ) {
+            // Create a Tab composable for each item in the `tabs` list
+            tabs.forEachIndexed { index, destination ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = {
+                        //When the user clicks a tab, navigate to its route
+                        tabNavController.navigate(destination.route) {
+                            // Pop back up to the first tab to prevent deep navigation stack buildup
+                            popUpTo(tabs[0].route) {
+                                saveState = true // Keep previous state if revisiting
+                            }
+                            launchSingleTop = true // Avoid multiple copies of the same destination
+                            restoreState = true    // Restore saved state of tab if available
+                        }
+                    },
+                    text = {
+                        // Display the tab's title text
+                        Text(
+                            text = destination.title,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (selectedTabIndex == index)
+                                FontWeight.Bold else FontWeight.Normal // Highlight selected tab
+                        )
+                    }
+                )
+            }
+        }
+
+        // TAB CONTENT SECTION
+        NavHost(
+            navController = tabNavController,             // Controller for tab navigation
+            startDestination = TabDestination.Songs.route, // Default tab when opening the screen
+            modifier = Modifier.fillMaxSize()
+        ) {
+
+            //SONGS TAB
+            composable(TabDestination.Songs.route) {
+                TabScreenContent(
+                    title = "Songs",
+                    items = listOf(
+                        "Bohemian Rhapsody - Queen",
+                        "Stairway to Heaven - Led Zeppelin",
+                        "Imagine - John Lennon",
+                        "Smells Like Teen Spirit - Nirvana",
+                        "Billie Jean - Michael Jackson",
+                        "Hotel California - Eagles",
+                        "Sweet Child O' Mine - Guns N' Roses"
+                    )
+                )
+            }
+
+            //ALBUMS TAB
+            composable(TabDestination.Albums.route) {
+                TabScreenContent(
+                    title = "Albums",
+                    items = listOf(
+                        "Abbey Road - The Beatles",
+                        "The Dark Side of the Moon - Pink Floyd",
+                        "Thriller - Michael Jackson",
+                        "Back in Black - AC/DC",
+                        "Rumours - Fleetwood Mac",
+                        "Led Zeppelin IV - Led Zeppelin"
+                    )
+                )
+            }
+
+            //ARTISTS TAB
+            composable(TabDestination.Artists.route) {
+                TabScreenContent(
+                    title = "Artists",
+                    items = listOf(
+                        "The Beatles",
+                        "Queen",
+                        "Led Zeppelin",
+                        "Pink Floyd",
+                        "The Rolling Stones",
+                        "AC/DC",
+                        "Nirvana"
+                    )
+                )
+            }
+        }
+    }
+}
 
 
 //displays the content of tabs with cards
