@@ -78,6 +78,9 @@ sealed class TabDestination(val route: String, val title: String) {
 
     // Tab to display artists
     object Artists : TabDestination("artists", "Artists")
+
+    // TODO - EXERCISE 2: Add a new "Playlists" tab object
+    // Follow the same pattern as Songs, Albums and Artists
 }
 
 class MainActivity : ComponentActivity() {
@@ -203,6 +206,10 @@ fun MusicDrawerApp() {
                     )
                 )
             }
+
+            // TODO - EXERCISE 5: Add a bottomBar parameter here
+            // Create the BottomNavigationBar function first --> TODO at the end of the file
+
         ) { paddingValues ->
             //This is the main content with all screens
             // Hosts the navigation graph with all app screens
@@ -601,6 +608,8 @@ fun HomeScreenWithTabs() {
         TabDestination.Songs,
         TabDestination.Albums,
         TabDestination.Artists
+
+        // TODO EXERCISE 2: Add "Playlists" tab
     )
 
     //Observe the current back stack entry to know which tab is active
@@ -708,6 +717,8 @@ fun HomeScreenWithTabs() {
                     )
                 )
             }
+
+            //TODO - EXERCISE 2: Add a composable for "Playlists" route
         }
     }
 }
@@ -818,3 +829,8 @@ fun ScreenContent(title: String, description: String) {
         )
     }
 }
+
+// TODO - EXERCISE 5: Create the BottomNavigationBar composable function
+// This function should:
+// - Accept currentRoute: String? and onNavigate: (String)
+// - Include 3 items for: Home, Search, Library
