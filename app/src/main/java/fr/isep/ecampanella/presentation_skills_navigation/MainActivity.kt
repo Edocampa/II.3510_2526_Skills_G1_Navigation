@@ -331,7 +331,7 @@ fun MusicDrawerContent(
                 fontWeight = FontWeight.Bold
             )
 
-            //This is the library section like Liked songs,Create Playlist,Podcasts
+            //This is the library section like Liked songs,Create Playlist, Podcasts
             // Creates a list containing the library-related destinations
             val libraryDestinations = listOf(
                 // Liked songs destination
